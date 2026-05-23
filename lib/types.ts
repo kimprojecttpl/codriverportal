@@ -26,7 +26,12 @@ export type Category = {
   name_en: string;
   icon: string;
   order_index: number;
+  parent_id: string | null;
   created_at: string;
+};
+
+export type CategoryNode = Category & {
+  children: CategoryNode[];
 };
 
 export type Tag = {
@@ -52,4 +57,5 @@ export type CategoryInput = {
   name_th: string;
   name_en: string;
   icon: string;
+  parent_id: string | null;
 };

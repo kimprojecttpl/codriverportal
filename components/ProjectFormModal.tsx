@@ -5,6 +5,7 @@ import { Modal } from "./Modal";
 import { TagInput } from "./TagInput";
 import { Loader2 } from "lucide-react";
 import type { Category, ProjectInput, ProjectStatus, ProjectWithTags } from "@/lib/types";
+import { buildCategoryTree } from "@/lib/db";
 
 type Props = {
   open: boolean;
@@ -135,11 +136,17 @@ export function ProjectFormModal({
               <option value="" disabled>
                 -- เลือก / Select --
               </option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name_th} / {c.name_en}
-                </option>
-              ))}
+              {buildCategoryTree(categories).flatMap((parent) => [
+                <option key={parent.id} value={parent.id}>
+                  {parent.name_th} / {parent.name_en}
+                </option>,
+                ...parent.children.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {"    └ "}
+                    {child.name_th} / {child.name_en}
+                  </option>
+                )),
+              ])}
             </select>
           </Field>
           <Field label_th="สถานะ" label_en="Status">

@@ -15,6 +15,7 @@ import type { Category, ProjectInput, ProjectWithTags, Tag } from "@/lib/types";
 import {
   createProject,
   deleteProject,
+  descendantCategoryIds,
   fetchCategories,
   fetchProjects,
   fetchTags,
@@ -117,10 +118,25 @@ export function Portal() {
 
   const filtered = useMemo(() => {
     const STATUS_FILTERS = ["active", "paused", "done"];
+
+    // Build category id set for filter — includes descendants when parent is selected
+    let categoryIdSet: Set<string> | null = null;
+    if (
+      filter !== "all" &&
+      filter !== "pinned" &&
+      !STATUS_FILTERS.includes(filter)
+    ) {
+      const selectedCat = categories.find((c) => c.id === filter);
+      if (selectedCat) {
+        const ids = [selectedCat.id, ...descendantCategoryIds(categories, selectedCat.id)];
+        categoryIdSet = new Set(ids);
+      }
+    }
+
     const result = projects.filter((p) => {
       if (filter === "pinned") return p.pinned;
       if (STATUS_FILTERS.includes(filter)) return p.status === filter;
-      if (filter !== "all" && p.category_id !== filter) return false;
+      if (categoryIdSet && (!p.category_id || !categoryIdSet.has(p.category_id))) return false;
       if (search) {
         const q = search.toLowerCase();
         const inName =
@@ -146,7 +162,7 @@ export function Portal() {
       if (aTime !== bTime) return bTime - aTime;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
-  }, [projects, filter, search, sortBy]);
+  }, [projects, categories, filter, search, sortBy]);
 
   const handleLaunch = async (p: ProjectWithTags) => {
     window.open(p.url, "_blank", "noopener,noreferrer");

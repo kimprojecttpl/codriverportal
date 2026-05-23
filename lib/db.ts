@@ -2,11 +2,47 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   Category,
   CategoryInput,
+  CategoryNode,
   Project,
   ProjectInput,
   ProjectWithTags,
   Tag,
 } from "./types";
+
+/**
+ * Build a 2-level category tree from a flat list.
+ * Top-level categories (parent_id === null) become roots; others become children.
+ */
+export function buildCategoryTree(categories: Category[]): CategoryNode[] {
+  const byId = new Map<string, CategoryNode>();
+  categories.forEach((c) => byId.set(c.id, { ...c, children: [] }));
+
+  const roots: CategoryNode[] = [];
+  byId.forEach((node) => {
+    if (node.parent_id && byId.has(node.parent_id)) {
+      byId.get(node.parent_id)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  const sortByOrder = (a: CategoryNode, b: CategoryNode) =>
+    a.order_index - b.order_index || a.name_th.localeCompare(b.name_th);
+  roots.sort(sortByOrder);
+  roots.forEach((r) => r.children.sort(sortByOrder));
+  return roots;
+}
+
+/**
+ * Get all descendant category IDs (children) of a given category.
+ * Used when filtering — selecting a parent includes children's projects.
+ */
+export function descendantCategoryIds(
+  categories: Category[],
+  parentId: string
+): string[] {
+  return categories.filter((c) => c.parent_id === parentId).map((c) => c.id);
+}
 
 export async function fetchProjects(supabase: SupabaseClient): Promise<ProjectWithTags[]> {
   const { data: projects, error: projectsError } = await supabase

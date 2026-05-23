@@ -1,6 +1,7 @@
 "use client";
 
-import type { Category, Project } from "@/lib/types";
+import type { Category, CategoryNode, Project } from "@/lib/types";
+import { buildCategoryTree } from "@/lib/db";
 import {
   LayoutGrid,
   Briefcase,
@@ -11,14 +12,27 @@ import {
   Zap,
   Pause,
   CheckCircle2,
+  Code,
+  Palette,
+  Music,
+  Camera,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const iconMap: Record<string, LucideIcon> = {
+  LayoutGrid,
   Briefcase,
   Heart,
   BookOpen,
   FlaskConical,
+  Code,
+  Palette,
+  Music,
+  Camera,
+  Globe,
+  Star,
+  Zap,
 };
 
 type Props = {
@@ -30,8 +44,16 @@ type Props = {
 };
 
 export function CategoryRail({ categories, projects, selected, onSelect, onReset }: Props) {
-  const countByCategory = (catId: string) =>
+  const tree = buildCategoryTree(categories);
+
+  // Direct count — projects whose category_id matches exactly
+  const directCount = (catId: string) =>
     projects.filter((p) => p.category_id === catId).length;
+
+  // Rollup count for parent = own projects + all children's projects
+  const rollupCount = (node: CategoryNode) =>
+    directCount(node.id) + node.children.reduce((sum, c) => sum + directCount(c.id), 0);
+
   const totalCount = projects.length;
   const activeCount = projects.filter((p) => p.status === "active").length;
   const pausedCount = projects.filter((p) => p.status === "paused").length;
@@ -107,18 +129,34 @@ export function CategoryRail({ categories, projects, selected, onSelect, onReset
           หมวดหมู่ · Categories
         </div>
 
-        {categories.map((cat) => {
-          const Icon = iconMap[cat.icon] ?? LayoutGrid;
+        {tree.map((parent) => {
+          const Icon = iconMap[parent.icon] ?? LayoutGrid;
           return (
-            <RailItem
-              key={cat.id}
-              icon={Icon}
-              active={selected === cat.id}
-              onClick={() => onSelect(cat.id)}
-              count={countByCategory(cat.id)}
-              title_th={cat.name_th}
-              title_en={cat.name_en}
-            />
+            <div key={parent.id}>
+              <RailItem
+                icon={Icon}
+                active={selected === parent.id}
+                onClick={() => onSelect(parent.id)}
+                count={rollupCount(parent)}
+                title_th={parent.name_th}
+                title_en={parent.name_en}
+              />
+              {parent.children.map((child) => {
+                const ChildIcon = iconMap[child.icon] ?? LayoutGrid;
+                return (
+                  <RailItem
+                    key={child.id}
+                    icon={ChildIcon}
+                    active={selected === child.id}
+                    onClick={() => onSelect(child.id)}
+                    count={directCount(child.id)}
+                    title_th={child.name_th}
+                    title_en={child.name_en}
+                    indent
+                  />
+                );
+              })}
+            </div>
           );
         })}
       </div>
@@ -134,9 +172,19 @@ type RailItemProps = {
   title_th: string;
   title_en: string;
   accent?: "emerald" | "amber" | "slate";
+  indent?: boolean;
 };
 
-function RailItem({ icon: Icon, active, onClick, count, title_th, title_en, accent }: RailItemProps) {
+function RailItem({
+  icon: Icon,
+  active,
+  onClick,
+  count,
+  title_th,
+  title_en,
+  accent,
+  indent,
+}: RailItemProps) {
   const iconColor = accent === "emerald"
     ? "text-emerald-500"
     : accent === "amber"
@@ -148,15 +196,15 @@ function RailItem({ icon: Icon, active, onClick, count, title_th, title_en, acce
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
+      className={`w-full flex items-center gap-2 ${indent ? "pl-8 pr-3" : "px-3"} py-1.5 text-left transition-colors ${
         active
           ? "bg-cyan-50 text-cyan-700 border-r-2 border-cyan-500"
           : "text-slate-700 hover:bg-slate-50 border-r-2 border-transparent"
       }`}
     >
-      <Icon className={`w-4 h-4 shrink-0 ${active ? "text-cyan-600" : iconColor}`} />
+      <Icon className={`${indent ? "w-3.5 h-3.5" : "w-4 h-4"} shrink-0 ${active ? "text-cyan-600" : iconColor}`} />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium leading-tight truncate">{title_th}</div>
+        <div className={`${indent ? "text-xs" : "text-sm"} font-medium leading-tight truncate`}>{title_th}</div>
         <div className="text-[10px] text-slate-500 leading-tight truncate">{title_en}</div>
       </div>
       <span

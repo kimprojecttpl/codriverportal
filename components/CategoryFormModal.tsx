@@ -10,6 +10,7 @@ type Props = {
   onClose: () => void;
   onSubmit: (input: CategoryInput) => Promise<void>;
   initial?: Category | null;
+  categories: Category[];
 };
 
 const ICON_OPTIONS = [
@@ -27,11 +28,12 @@ const ICON_OPTIONS = [
   "Zap",
 ];
 
-export function CategoryFormModal({ open, onClose, onSubmit, initial }: Props) {
+export function CategoryFormModal({ open, onClose, onSubmit, initial, categories }: Props) {
   const [form, setForm] = useState<CategoryInput>({
     name_th: "",
     name_en: "",
     icon: "LayoutGrid",
+    parent_id: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,12 +45,30 @@ export function CategoryFormModal({ open, onClose, onSubmit, initial }: Props) {
         name_th: initial.name_th,
         name_en: initial.name_en,
         icon: initial.icon,
+        parent_id: initial.parent_id,
       });
     } else {
-      setForm({ name_th: "", name_en: "", icon: "LayoutGrid" });
+      setForm({ name_th: "", name_en: "", icon: "LayoutGrid", parent_id: null });
     }
     setError(null);
   }, [open, initial]);
+
+  // Available parents: top-level categories (parent_id === null), excluding self
+  // Also exclude categories that have children if we're editing (can't move parent under another)
+  const possibleParents = categories.filter((c) => {
+    if (c.parent_id !== null) return false;
+    if (initial && c.id === initial.id) return false;
+    if (initial) {
+      const hasChildren = categories.some((x) => x.parent_id === initial.id);
+      if (hasChildren) return false;
+    }
+    return true;
+  });
+
+  // If editing a category that has children, lock parent_id to null
+  const hasChildren = initial
+    ? categories.some((c) => c.parent_id === initial.id)
+    : false;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +136,32 @@ export function CategoryFormModal({ open, onClose, onSubmit, initial }: Props) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            หมวดแม่ <span className="text-slate-400 font-normal">/ Parent category (optional)</span>
+          </label>
+          <select
+            value={form.parent_id ?? ""}
+            onChange={(e) => setForm({ ...form, parent_id: e.target.value || null })}
+            disabled={hasChildren}
+            className="w-full h-10 px-3 text-sm bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 disabled:bg-slate-50 disabled:text-slate-500"
+          >
+            <option value="">— ไม่มี / None (top-level) —</option>
+            {possibleParents.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name_th} / {c.name_en}
+              </option>
+            ))}
+          </select>
+          {hasChildren && (
+            <p className="text-[10px] text-slate-500 mt-1">
+              หมวดนี้มี sub-category อยู่ — ไม่สามารถเปลี่ยนเป็น child ได้
+              <br />
+              This category has children — cannot be made a child itself
+            </p>
+          )}
         </div>
 
         {error && (

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
+  buildCategoryTree,
   fetchCategories,
   fetchTags,
   fetchProjects,
@@ -11,7 +12,7 @@ import {
   updateCategory,
   deleteCategory,
 } from "@/lib/db";
-import type { Category, CategoryInput, ProjectWithTags, Tag } from "@/lib/types";
+import type { Category, CategoryInput, CategoryNode, ProjectWithTags, Tag } from "@/lib/types";
 import { Sidebar } from "@/components/Sidebar";
 import { CategoryFormModal } from "@/components/CategoryFormModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -99,6 +100,8 @@ export default function SettingsPage() {
 
   const countByCategory = (catId: string) =>
     projects.filter((p) => p.category_id === catId).length;
+
+  const tree = useMemo(() => buildCategoryTree(categories), [categories]);
 
   const tagUsage = useMemo(() => {
     const usage = new Map<string, number>();
@@ -188,50 +191,18 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
-                  {categories.map((cat) => {
-                    const Icon = iconMap[cat.icon] ?? LayoutGrid;
-                    const count = countByCategory(cat.id);
-                    return (
-                      <li
-                        key={cat.id}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50"
-                      >
-                        <div className="w-9 h-9 rounded bg-cyan-50 flex items-center justify-center text-cyan-600 shrink-0">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-slate-900 leading-tight">
-                            {cat.name_th}
-                          </div>
-                          <div className="text-xs text-slate-500 leading-tight">
-                            {cat.name_en}
-                          </div>
-                        </div>
-                        <span className="text-xs text-slate-400 tabular-nums">
-                          {count} โครงการ / projects
-                        </span>
-                        <button
-                          onClick={() => {
-                            setEditTarget(cat);
-                            setFormOpen(true);
-                          }}
-                          className="w-8 h-8 rounded flex items-center justify-center hover:bg-slate-100 text-slate-500"
-                          title="แก้ไข / Edit"
-                          aria-label="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(cat)}
-                          className="w-8 h-8 rounded flex items-center justify-center hover:bg-rose-50 text-slate-500 hover:text-rose-600"
-                          title="ลบ / Delete"
-                          aria-label="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </li>
-                    );
-                  })}
+                  {tree.map((node) => (
+                    <CategoryRow
+                      key={node.id}
+                      node={node}
+                      countByCategory={countByCategory}
+                      onEdit={(c) => {
+                        setEditTarget(c);
+                        setFormOpen(true);
+                      }}
+                      onDelete={(c) => setDeleteTarget(c)}
+                    />
+                  ))}
                 </ul>
               )}
             </div>
@@ -303,6 +274,7 @@ export default function SettingsPage() {
         onClose={() => setFormOpen(false)}
         onSubmit={handleCategorySubmit}
         initial={editTarget}
+        categories={categories}
       />
 
       <ConfirmDialog
@@ -330,5 +302,80 @@ function Row({ label_th, label_en, value }: { label_th: string; label_en: string
       </div>
       <span className="font-semibold text-slate-900 tabular-nums">{value}</span>
     </div>
+  );
+}
+
+function CategoryRow({
+  node,
+  countByCategory,
+  onEdit,
+  onDelete,
+  indent = false,
+}: {
+  node: CategoryNode;
+  countByCategory: (id: string) => number;
+  onEdit: (c: Category) => void;
+  onDelete: (c: Category) => void;
+  indent?: boolean;
+}) {
+  const Icon = iconMap[node.icon] ?? LayoutGrid;
+  const directCount = countByCategory(node.id);
+  const childCount = node.children.reduce((sum, c) => sum + countByCategory(c.id), 0);
+  const total = directCount + childCount;
+
+  return (
+    <>
+      <li
+        className={`flex items-center gap-3 ${indent ? "pl-10" : "px-4"} py-2.5 hover:bg-slate-50`}
+        style={indent ? { paddingRight: "1rem" } : undefined}
+      >
+        <div
+          className={`${indent ? "w-7 h-7" : "w-9 h-9"} rounded bg-cyan-50 flex items-center justify-center text-cyan-600 shrink-0`}
+        >
+          <Icon className={indent ? "w-3.5 h-3.5" : "w-4 h-4"} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className={`${indent ? "text-xs" : "text-sm"} font-medium text-slate-900 leading-tight`}>
+            {node.name_th}
+            {node.parent_id === null && node.children.length > 0 && (
+              <span className="ml-2 text-[10px] text-slate-400 font-normal">
+                ({node.children.length} sub)
+              </span>
+            )}
+          </div>
+          <div className="text-[10px] text-slate-500 leading-tight">{node.name_en}</div>
+        </div>
+        <span className="text-xs text-slate-400 tabular-nums">
+          {indent ? `${directCount}` : `${total}`}{" "}
+          <span className="text-[10px]">โครงการ / projects</span>
+        </span>
+        <button
+          onClick={() => onEdit(node)}
+          className="w-8 h-8 rounded flex items-center justify-center hover:bg-slate-100 text-slate-500"
+          title="แก้ไข / Edit"
+          aria-label="Edit"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => onDelete(node)}
+          className="w-8 h-8 rounded flex items-center justify-center hover:bg-rose-50 text-slate-500 hover:text-rose-600"
+          title="ลบ / Delete"
+          aria-label="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </li>
+      {node.children.map((child) => (
+        <CategoryRow
+          key={child.id}
+          node={child}
+          countByCategory={countByCategory}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          indent
+        />
+      ))}
+    </>
   );
 }
