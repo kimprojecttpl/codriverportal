@@ -1,14 +1,14 @@
 "use client";
 
-import type { Project, Category } from "@/lib/types";
+import type { Category, ProjectWithTags } from "@/lib/types";
 import { StatusBadge } from "./StatusBadge";
 import { ExternalLink, Plus } from "lucide-react";
 
 type Props = {
-  projects: Project[];
+  projects: ProjectWithTags[];
   categories: Category[];
-  onRowClick: (p: Project) => void;
-  onLaunch: (p: Project) => void;
+  onRowClick: (p: ProjectWithTags) => void;
+  onLaunch: (p: ProjectWithTags) => void;
   onAddNew: () => void;
 };
 
@@ -27,8 +27,15 @@ function formatRelative(iso: string | null): { th: string; en: string } {
   };
 }
 
-export function ProjectsTable({ projects, categories, onRowClick, onLaunch, onAddNew }: Props) {
-  const getCat = (id: string) => categories.find((c) => c.id === id);
+export function ProjectsTable({
+  projects,
+  categories,
+  onRowClick,
+  onLaunch,
+  onAddNew,
+}: Props) {
+  const getCat = (id: string | null) =>
+    id ? categories.find((c) => c.id === id) : undefined;
 
   if (projects.length === 0) {
     return (
@@ -36,11 +43,11 @@ export function ProjectsTable({ projects, categories, onRowClick, onLaunch, onAd
         <div className="text-5xl mb-4">📭</div>
         <div className="text-base font-semibold text-slate-700">ยังไม่มีโครงการ</div>
         <div className="text-xs text-slate-500 mt-1 mb-5">
-          No projects yet — try adjusting filters or add a new one
+          No projects yet — adjust filters or add a new one
         </div>
         <button
           onClick={onAddNew}
-          className="flex items-center gap-2 h-9 px-4 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-md"
+          className="flex items-center gap-2 h-10 px-4 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-md"
         >
           <Plus className="w-4 h-4" />
           <span>เพิ่มโครงการแรก / Add first project</span>
@@ -100,11 +107,13 @@ export function ProjectsTable({ projects, categories, onRowClick, onLaunch, onAd
                   <div className="text-xs text-slate-500 leading-tight">{p.name_en}</div>
                 </td>
                 <td className="px-2 py-3">
-                  {cat && (
+                  {cat ? (
                     <div>
                       <div className="text-sm text-slate-700 leading-tight">{cat.name_th}</div>
                       <div className="text-[10px] text-slate-400 leading-tight">{cat.name_en}</div>
                     </div>
+                  ) : (
+                    <div className="text-xs text-slate-400">ไม่ระบุ / Uncategorized</div>
                   )}
                 </td>
                 <td className="px-2 py-3">

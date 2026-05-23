@@ -36,3 +36,6 @@ desktop.ini
 
 # Vercel
 .vercel
+
+# Claude Code local config
+.claude/

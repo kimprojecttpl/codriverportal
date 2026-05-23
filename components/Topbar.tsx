@@ -1,15 +1,42 @@
 "use client";
 
-import { Search, Plus, ChevronDown, Database, Settings2, Lock, Download, Info } from "lucide-react";
+import {
+  Search,
+  Plus,
+  ChevronDown,
+  Database,
+  Settings2,
+  Lock,
+  Download,
+  Info,
+} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+
+export type SortKey = "recent" | "name" | "status";
 
 type Props = {
   search: string;
   onSearchChange: (v: string) => void;
   onAddNew: () => void;
   resultCount: number;
+  sortBy: SortKey;
+  onSortChange: (s: SortKey) => void;
 };
 
-export function Topbar({ search, onSearchChange, onAddNew, resultCount }: Props) {
+const sortLabels: Record<SortKey, { th: string; en: string }> = {
+  recent: { th: "ล่าสุด", en: "Recent" },
+  name: { th: "ชื่อ", en: "Name" },
+  status: { th: "สถานะ", en: "Status" },
+};
+
+export function Topbar({
+  search,
+  onSearchChange,
+  onAddNew,
+  resultCount,
+  sortBy,
+  onSortChange,
+}: Props) {
   return (
     <div className="flex items-center bg-white border-b border-slate-200 h-14 px-4 gap-3 shrink-0">
       <div className="flex items-center gap-2 shrink-0">
@@ -19,15 +46,23 @@ export function Topbar({ search, onSearchChange, onAddNew, resultCount }: Props)
           <span className="font-semibold text-slate-900 text-sm">Codriver Portal</span>
           <span className="text-[10px] text-slate-500">ศูนย์รวมโครงการ · Project Hub</span>
         </div>
-        <ChevronDown className="w-4 h-4 text-slate-400" />
       </div>
 
       <div className="h-8 w-px bg-slate-200 mx-1" />
 
-      <FilterChip label="View" valueTh="ทั้งหมด" valueEn="All Projects" />
-      <FilterChip label="Status" valueTh="ทุกสถานะ" valueEn="Any Status" />
-      <FilterChip label="Category" valueTh="ทุกหมวด" valueEn="All Categories" />
-      <FilterChip label="Sort" valueTh="ล่าสุด" valueEn="Recent" />
+      <Dropdown
+        label="Sort"
+        valueTh={sortLabels[sortBy].th}
+        valueEn={sortLabels[sortBy].en}
+        options={[
+          { key: "recent", th: "ล่าสุด", en: "Recent (last accessed)" },
+          { key: "name", th: "ชื่อ", en: "Name (A-Z)" },
+          { key: "status", th: "สถานะ", en: "Status" },
+        ]}
+        onSelect={(k) => onSortChange(k as SortKey)}
+      />
+
+      <FilterChip label="View" valueTh="ตาราง" valueEn="Table" />
 
       <div className="flex-1" />
 
@@ -48,7 +83,7 @@ export function Topbar({ search, onSearchChange, onAddNew, resultCount }: Props)
         />
       </div>
 
-      <div className="hidden md:flex items-center gap-1 text-slate-400">
+      <div className="hidden lg:flex items-center gap-1 text-slate-400">
         <IconButton icon={Settings2} title="ตั้งค่า / Settings" />
         <IconButton icon={Lock} title="ล็อก / Lock" />
         <IconButton icon={Download} title="ส่งออก / Export" />
@@ -69,18 +104,77 @@ export function Topbar({ search, onSearchChange, onAddNew, resultCount }: Props)
   );
 }
 
+function Dropdown({
+  label,
+  valueTh,
+  valueEn,
+  options,
+  onSelect,
+}: {
+  label: string;
+  valueTh: string;
+  valueEn: string;
+  options: { key: string; th: string; en: string }[];
+  onSelect: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex flex-col items-start gap-0.5 py-1 px-2 rounded hover:bg-slate-50 shrink-0 transition-colors"
+      >
+        <div className="flex items-center gap-1 text-[10px] text-slate-500 uppercase tracking-wide font-medium">
+          {label}
+          <ChevronDown className="w-3 h-3" />
+        </div>
+        <div className="flex flex-col items-start leading-tight">
+          <span className="text-xs font-semibold text-slate-900">{valueTh}</span>
+          <span className="text-[10px] text-slate-500">{valueEn}</span>
+        </div>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-50 min-w-[180px] overflow-hidden">
+          {options.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => {
+                onSelect(opt.key);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b border-slate-100 last:border-0"
+            >
+              <div className="font-medium text-slate-900">{opt.th}</div>
+              <div className="text-[10px] text-slate-500">{opt.en}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FilterChip({ label, valueTh, valueEn }: { label: string; valueTh: string; valueEn: string }) {
   return (
-    <button className="flex flex-col items-start gap-0.5 py-1 px-2 rounded hover:bg-slate-50 shrink-0 transition-colors">
+    <div className="flex flex-col items-start gap-0.5 py-1 px-2 shrink-0">
       <div className="flex items-center gap-1 text-[10px] text-slate-500 uppercase tracking-wide font-medium">
         {label}
-        <ChevronDown className="w-3 h-3" />
       </div>
       <div className="flex flex-col items-start leading-tight">
         <span className="text-xs font-semibold text-slate-900">{valueTh}</span>
         <span className="text-[10px] text-slate-500">{valueEn}</span>
       </div>
-    </button>
+    </div>
   );
 }
 

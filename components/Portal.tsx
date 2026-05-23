@@ -1,35 +1,85 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Sidebar } from "./Sidebar";
-import { Topbar } from "./Topbar";
+import { Topbar, type SortKey } from "./Topbar";
 import { CategoryRail } from "./CategoryRail";
 import { ProjectsTable } from "./ProjectsTable";
 import { DetailPanel } from "./DetailPanel";
-import { mockProjects, mockCategories } from "@/lib/mock-data";
-import type { Project } from "@/lib/types";
+import { ProjectFormModal } from "./ProjectFormModal";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { LoadingState, ErrorState } from "./LoadingState";
+import type { Category, ProjectInput, ProjectWithTags, Tag } from "@/lib/types";
+import {
+  createProject,
+  deleteProject,
+  fetchCategories,
+  fetchProjects,
+  fetchTags,
+  touchLastAccessed,
+  updateProject,
+} from "@/lib/db";
 
 export function Portal() {
+  const supabase = useMemo(() => {
+    try {
+      return createClient();
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [projects, setProjects] = useState<ProjectWithTags[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<string>("all");
-  const [selected, setSelected] = useState<Project | null>(null);
+  const [sortBy, setSortBy] = useState<SortKey>("recent");
+  const [selected, setSelected] = useState<ProjectWithTags | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ProjectWithTags | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProjectWithTags | null>(null);
+
+  const refetch = useCallback(async () => {
+    if (!supabase) {
+      setError(
+        "Supabase ยังไม่ได้ตั้งค่า — เพิ่ม NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY ใน .env.local"
+      );
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const [p, c, t] = await Promise.all([
+        fetchProjects(supabase),
+        fetchCategories(supabase),
+        fetchTags(supabase),
+      ]);
+      setProjects(p);
+      setCategories(c);
+      setTags(t);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const filtered = useMemo(() => {
-    return mockProjects.filter((p) => {
-      if (filter === "active" && p.status !== "active") return false;
-      if (filter === "paused" && p.status !== "paused") return false;
-      if (filter === "done" && p.status !== "done") return false;
-      if (filter === "pinned") return false;
-      if (
-        filter !== "all" &&
-        filter !== "active" &&
-        filter !== "paused" &&
-        filter !== "done" &&
-        filter !== "pinned" &&
-        p.category_id !== filter
-      ) {
-        return false;
-      }
+    const STATUS_FILTERS = ["active", "paused", "done"];
+    const result = projects.filter((p) => {
+      if (filter === "pinned") return p.pinned;
+      if (STATUS_FILTERS.includes(filter)) return p.status === filter;
+      if (filter !== "all" && p.category_id !== filter) return false;
       if (search) {
         const q = search.toLowerCase();
         const inName =
@@ -42,16 +92,62 @@ export function Portal() {
       }
       return true;
     });
-  }, [search, filter]);
 
-  const handleLaunch = (p: Project) => {
+    return [...result].sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      if (sortBy === "name") return a.name_th.localeCompare(b.name_th, "th");
+      if (sortBy === "status") {
+        const order = { active: 0, paused: 1, done: 2 };
+        return order[a.status] - order[b.status];
+      }
+      const aTime = a.last_accessed_at ? new Date(a.last_accessed_at).getTime() : 0;
+      const bTime = b.last_accessed_at ? new Date(b.last_accessed_at).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+  }, [projects, filter, search, sortBy]);
+
+  const handleLaunch = async (p: ProjectWithTags) => {
     window.open(p.url, "_blank", "noopener,noreferrer");
+    if (!supabase) return;
+    try {
+      await touchLastAccessed(supabase, p.id);
+      setProjects((prev) =>
+        prev.map((x) =>
+          x.id === p.id ? { ...x, last_accessed_at: new Date().toISOString() } : x
+        )
+      );
+    } catch {
+      // Non-blocking — launch already happened
+    }
   };
 
   const handleAddNew = () => {
-    alert(
-      "เพิ่มโครงการ — จะใช้งานได้ใน v1.1 (ต่อ Supabase แล้ว)\n\nAdd Project — Available in v1.1 (after Supabase integration)"
-    );
+    setEditTarget(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (p: ProjectWithTags) => {
+    setEditTarget(p);
+    setFormOpen(true);
+  };
+
+  const handleFormSubmit = async (input: ProjectInput) => {
+    if (!supabase) throw new Error("Supabase not configured");
+    if (editTarget) {
+      await updateProject(supabase, editTarget.id, input);
+    } else {
+      await createProject(supabase, input);
+    }
+    await refetch();
+    setSelected(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || !supabase) return;
+    await deleteProject(supabase, deleteTarget.id);
+    await refetch();
+    setSelected(null);
   };
 
   return (
@@ -63,33 +159,66 @@ export function Portal() {
           onSearchChange={setSearch}
           onAddNew={handleAddNew}
           resultCount={filtered.length}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
         />
         <div className="flex-1 flex min-h-0">
           <CategoryRail
-            categories={mockCategories}
-            projects={mockProjects}
+            categories={categories}
+            projects={projects}
             selected={filter}
             onSelect={setFilter}
             onReset={() => {
               setFilter("all");
               setSearch("");
+              setSortBy("recent");
             }}
           />
-          <ProjectsTable
-            projects={filtered}
-            categories={mockCategories}
-            onRowClick={setSelected}
-            onLaunch={handleLaunch}
-            onAddNew={handleAddNew}
-          />
+          {loading ? (
+            <LoadingState />
+          ) : error ? (
+            <ErrorState error={error} onRetry={refetch} />
+          ) : (
+            <ProjectsTable
+              projects={filtered}
+              categories={categories}
+              onRowClick={setSelected}
+              onLaunch={handleLaunch}
+              onAddNew={handleAddNew}
+            />
+          )}
           <DetailPanel
             project={selected}
-            categories={mockCategories}
+            categories={categories}
             onClose={() => setSelected(null)}
             onLaunch={handleLaunch}
+            onEdit={handleEdit}
+            onDelete={(p) => setDeleteTarget(p)}
           />
         </div>
       </div>
+
+      <ProjectFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleFormSubmit}
+        categories={categories}
+        tagSuggestions={tags.map((t) => t.name)}
+        initial={editTarget}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title_th="ลบโครงการ"
+        title_en="Delete Project"
+        message_th={`ต้องการลบ "${deleteTarget?.name_th ?? ""}" ใช่ไหม? การกระทำนี้ย้อนกลับไม่ได้`}
+        message_en={`Delete "${deleteTarget?.name_en ?? ""}"? This action cannot be undone.`}
+        confirmLabel_th="ลบ"
+        confirmLabel_en="Delete"
+        danger
+      />
     </div>
   );
 }
