@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -14,6 +14,12 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (createClient() === null) {
+      router.replace("/");
+    }
+  }, [router]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -26,8 +32,12 @@ export default function SignupPage() {
       return;
     }
 
+    const supabase = createClient();
+    if (!supabase) {
+      router.replace("/");
+      return;
+    }
     try {
-      const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(error.message);

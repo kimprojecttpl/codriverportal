@@ -53,13 +53,7 @@ const iconMap: Record<string, LucideIcon> = {
 };
 
 export default function SettingsPage() {
-  const supabase = useMemo(() => {
-    try {
-      return createClient();
-    } catch {
-      return null;
-    }
-  }, []);
+  const supabase = useMemo(() => createClient(), []);
   const [categories, setCategories] = useState<Category[]>([]);
   const [projects, setProjects] = useState<ProjectWithTags[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -71,11 +65,6 @@ export default function SettingsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const refetch = useCallback(async () => {
-    if (!supabase) {
-      setError("Supabase ยังไม่ได้ตั้งค่า / Supabase not configured");
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
       const [c, t, p] = await Promise.all([
@@ -112,7 +101,6 @@ export default function SettingsPage() {
   }, [projects]);
 
   async function handleCategorySubmit(input: CategoryInput) {
-    if (!supabase) throw new Error("Supabase not configured");
     if (editTarget) {
       await updateCategory(supabase, editTarget.id, input);
     } else {
@@ -122,7 +110,7 @@ export default function SettingsPage() {
   }
 
   async function handleCategoryDelete() {
-    if (!deleteTarget || !supabase) return;
+    if (!deleteTarget) return;
     await deleteCategory(supabase, deleteTarget.id);
     await refetch();
   }

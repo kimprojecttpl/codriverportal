@@ -8,6 +8,21 @@ import type {
   ProjectWithTags,
   Tag,
 } from "./types";
+import {
+  localCreateCategory,
+  localCreateProject,
+  localDeleteCategory,
+  localDeleteProject,
+  localFetchCategories,
+  localFetchProjects,
+  localFetchTags,
+  localTogglePinned,
+  localTouchLastAccessed,
+  localUpdateCategory,
+  localUpdateProject,
+} from "./local-store";
+
+type Client = SupabaseClient | null;
 
 /**
  * Build a 2-level category tree from a flat list.
@@ -44,7 +59,8 @@ export function descendantCategoryIds(
   return categories.filter((c) => c.parent_id === parentId).map((c) => c.id);
 }
 
-export async function fetchProjects(supabase: SupabaseClient): Promise<ProjectWithTags[]> {
+export async function fetchProjects(supabase: Client): Promise<ProjectWithTags[]> {
+  if (!supabase) return localFetchProjects();
   const { data: projects, error: projectsError } = await supabase
     .from("projects")
     .select("*")
@@ -78,7 +94,8 @@ export async function fetchProjects(supabase: SupabaseClient): Promise<ProjectWi
   }));
 }
 
-export async function fetchCategories(supabase: SupabaseClient): Promise<Category[]> {
+export async function fetchCategories(supabase: Client): Promise<Category[]> {
+  if (!supabase) return localFetchCategories();
   const { data, error } = await supabase
     .from("categories")
     .select("*")
@@ -88,7 +105,8 @@ export async function fetchCategories(supabase: SupabaseClient): Promise<Categor
   return data as Category[];
 }
 
-export async function fetchTags(supabase: SupabaseClient): Promise<Tag[]> {
+export async function fetchTags(supabase: Client): Promise<Tag[]> {
+  if (!supabase) return localFetchTags();
   const { data, error } = await supabase
     .from("tags")
     .select("*")
@@ -98,9 +116,10 @@ export async function fetchTags(supabase: SupabaseClient): Promise<Tag[]> {
 }
 
 export async function createProject(
-  supabase: SupabaseClient,
+  supabase: Client,
   input: ProjectInput
 ): Promise<Project> {
+  if (!supabase) return localCreateProject(input);
   const { data: userData } = await supabase.auth.getUser();
   const ownerId = userData.user?.id;
   if (!ownerId) throw new Error("Not authenticated");
@@ -118,10 +137,11 @@ export async function createProject(
 }
 
 export async function updateProject(
-  supabase: SupabaseClient,
+  supabase: Client,
   id: string,
   input: ProjectInput
 ): Promise<Project> {
+  if (!supabase) return localUpdateProject(id, input);
   const { data: userData } = await supabase.auth.getUser();
   const ownerId = userData.user?.id;
   if (!ownerId) throw new Error("Not authenticated");
@@ -139,15 +159,17 @@ export async function updateProject(
   return project as Project;
 }
 
-export async function deleteProject(supabase: SupabaseClient, id: string): Promise<void> {
+export async function deleteProject(supabase: Client, id: string): Promise<void> {
+  if (!supabase) return localDeleteProject(id);
   const { error } = await supabase.from("projects").delete().eq("id", id);
   if (error) throw error;
 }
 
 export async function touchLastAccessed(
-  supabase: SupabaseClient,
+  supabase: Client,
   id: string
 ): Promise<void> {
+  if (!supabase) return localTouchLastAccessed(id);
   const { error } = await supabase
     .from("projects")
     .update({ last_accessed_at: new Date().toISOString() })
@@ -156,10 +178,11 @@ export async function touchLastAccessed(
 }
 
 export async function togglePinned(
-  supabase: SupabaseClient,
+  supabase: Client,
   id: string,
   pinned: boolean
 ): Promise<void> {
+  if (!supabase) return localTogglePinned(id, pinned);
   const { error } = await supabase.from("projects").update({ pinned }).eq("id", id);
   if (error) throw error;
 }
@@ -170,6 +193,8 @@ export async function syncProjectTags(
   tagNames: string[],
   ownerId: string
 ): Promise<void> {
+  // Note: this helper is only called by Supabase paths; local-store handles its own tag sync
+
   const normalized = Array.from(
     new Set(tagNames.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 0))
   );
@@ -207,9 +232,10 @@ export async function syncProjectTags(
 }
 
 export async function createCategory(
-  supabase: SupabaseClient,
+  supabase: Client,
   input: CategoryInput
 ): Promise<Category> {
+  if (!supabase) return localCreateCategory(input);
   const { data: userData } = await supabase.auth.getUser();
   const ownerId = userData.user?.id;
   if (!ownerId) throw new Error("Not authenticated");
@@ -231,10 +257,11 @@ export async function createCategory(
 }
 
 export async function updateCategory(
-  supabase: SupabaseClient,
+  supabase: Client,
   id: string,
   input: CategoryInput
 ): Promise<Category> {
+  if (!supabase) return localUpdateCategory(id, input);
   const { data, error } = await supabase
     .from("categories")
     .update(input)
@@ -245,7 +272,8 @@ export async function updateCategory(
   return data as Category;
 }
 
-export async function deleteCategory(supabase: SupabaseClient, id: string): Promise<void> {
+export async function deleteCategory(supabase: Client, id: string): Promise<void> {
+  if (!supabase) return localDeleteCategory(id);
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw error;
 }

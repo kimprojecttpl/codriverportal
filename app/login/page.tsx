@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -13,12 +13,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // In Local mode (no Supabase env), auth is not required — skip login
+  useEffect(() => {
+    if (createClient() === null) {
+      router.replace("/");
+    }
+  }, [router]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const supabase = createClient();
+    if (!supabase) {
+      router.replace("/");
+      return;
+    }
     try {
-      const supabase = createClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setError(error.message);

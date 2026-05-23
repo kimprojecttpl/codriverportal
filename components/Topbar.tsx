@@ -22,6 +22,7 @@ type Props = {
   sortBy: SortKey;
   onSortChange: (s: SortKey) => void;
   searchInputRef?: React.RefObject<HTMLInputElement>;
+  isLocal?: boolean;
 };
 
 const sortLabels: Record<SortKey, { th: string; en: string }> = {
@@ -38,16 +39,27 @@ export function Topbar({
   sortBy,
   onSortChange,
   searchInputRef,
+  isLocal,
 }: Props) {
   return (
     <div className="flex items-center bg-white border-b border-slate-200 h-14 px-4 gap-3 shrink-0">
       <div className="flex items-center gap-2 shrink-0">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+        <span
+          className={`w-2.5 h-2.5 rounded-full ${isLocal ? "bg-amber-500" : "bg-emerald-500"}`}
+        />
         <Database className="w-4 h-4 text-slate-600" />
         <div className="flex flex-col leading-tight">
           <span className="font-semibold text-slate-900 text-sm">Codriver Portal</span>
           <span className="text-[10px] text-slate-500">ศูนย์รวมโครงการ · Project Hub</span>
         </div>
+        {isLocal && (
+          <span
+            className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 bg-amber-100 text-amber-800 rounded uppercase tracking-wide"
+            title="ข้อมูลเก็บเฉพาะ browser นี้ — ตั้ง Supabase env vars เพื่อ sync cloud / Data stored in this browser only — set Supabase env vars to sync"
+          >
+            Local mode
+          </span>
+        )}
       </div>
 
       <div className="h-8 w-px bg-slate-200 mx-1" />

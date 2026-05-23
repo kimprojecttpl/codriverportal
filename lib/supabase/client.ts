@@ -1,12 +1,20 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export function createClient() {
+/**
+ * Create a Supabase browser client.
+ * Returns null when env vars are not configured — the app falls back
+ * to localStorage mode in that case (see lib/local-store.ts).
+ */
+export function createClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    throw new Error(
-      "Supabase ยังไม่ได้ตั้งค่า — เพิ่ม NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY ใน .env.local | Supabase not configured — add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local"
-    );
-  }
-  return createBrowserClient(url, key);
+  if (!url || !key) return null;
+  return createBrowserClient(url, key) as unknown as SupabaseClient;
+}
+
+export function isLocalMode(): boolean {
+  return !(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
 }

@@ -1,10 +1,12 @@
 "use client";
 
-import { Home, Settings, LogOut, Info } from "lucide-react";
+import { Home, Settings, LogOut, Info, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { clearLocalData } from "@/lib/local-store";
+import { useState, useMemo } from "react";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 const navItems = [
   { id: "home", icon: Home, label_th: "หน้าหลัก", label_en: "Home", href: "/" },
@@ -15,16 +17,24 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const isLocal = useMemo(() => createClient() === null, []);
 
   async function handleLogout() {
     setLoggingOut(true);
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
+      if (supabase) await supabase.auth.signOut();
     } catch {
       // proceed to redirect even if signOut fails
     }
     router.push("/login");
+    router.refresh();
+  }
+
+  async function handleClearLocal() {
+    clearLocalData();
     router.refresh();
   }
 
@@ -72,15 +82,39 @@ export function Sidebar() {
         <Info className="w-5 h-5" />
       </button>
 
-      <button
-        onClick={handleLogout}
-        disabled={loggingOut}
-        className="w-12 h-12 rounded-md flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400 disabled:opacity-50"
-        title="ออกจากระบบ / Logout"
-        aria-label="Logout"
-      >
-        <LogOut className="w-5 h-5" />
-      </button>
+      {isLocal ? (
+        <button
+          onClick={() => setConfirmClear(true)}
+          className="w-12 h-12 rounded-md flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400"
+          title="ล้างข้อมูล local / Clear local data"
+          aria-label="Clear local data"
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
+      ) : (
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-12 h-12 rounded-md flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400 disabled:opacity-50"
+          title="ออกจากระบบ / Logout"
+          aria-label="Logout"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
+      )}
+
+      <ConfirmDialog
+        open={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={handleClearLocal}
+        title_th="ล้างข้อมูลในเครื่อง"
+        title_en="Clear local data"
+        message_th="ลบโครงการและหมวดหมู่ทั้งหมดในเครื่องนี้? ย้อนกลับไม่ได้"
+        message_en="Delete all projects and categories on this device? Cannot be undone."
+        confirmLabel_th="ล้าง"
+        confirmLabel_en="Clear"
+        danger
+      />
     </aside>
   );
 }

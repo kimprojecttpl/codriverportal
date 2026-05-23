@@ -25,13 +25,7 @@ import {
 } from "@/lib/db";
 
 export function Portal() {
-  const supabase = useMemo(() => {
-    try {
-      return createClient();
-    } catch {
-      return null;
-    }
-  }, []);
+  const supabase = useMemo(() => createClient(), []);
 
   const [projects, setProjects] = useState<ProjectWithTags[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -61,15 +55,9 @@ export function Portal() {
   });
 
   const refetch = useCallback(async () => {
-    if (!supabase) {
-      setError(
-        "Supabase ยังไม่ได้ตั้งค่า — เพิ่ม NEXT_PUBLIC_SUPABASE_URL และ NEXT_PUBLIC_SUPABASE_ANON_KEY ใน .env.local"
-      );
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
+      // supabase may be null (Local mode) — db.ts functions fall back to localStorage
       const [p, c, t] = await Promise.all([
         fetchProjects(supabase),
         fetchCategories(supabase),
@@ -90,29 +78,38 @@ export function Portal() {
     refetch();
   }, [refetch]);
 
-  // Realtime subscription — keeps multiple tabs/devices in sync
+  // Realtime sync — Supabase channel when cloud-mode, storage events when local-mode
   useEffect(() => {
-    if (!supabase) return;
-    const channel = supabase
-      .channel("portal-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "projects" },
-        () => refetch()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "categories" },
-        () => refetch()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "project_tags" },
-        () => refetch()
-      )
-      .subscribe();
+    if (supabase) {
+      const channel = supabase
+        .channel("portal-realtime")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "projects" },
+          () => refetch()
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "categories" },
+          () => refetch()
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "project_tags" },
+          () => refetch()
+        )
+        .subscribe();
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+    // Local mode — listen for cross-tab storage changes
+    const onChange = () => refetch();
+    window.addEventListener("storage", onChange);
+    window.addEventListener("codriver-storage-change", onChange);
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener("storage", onChange);
+      window.removeEventListener("codriver-storage-change", onChange);
     };
   }, [supabase, refetch]);
 
@@ -166,7 +163,6 @@ export function Portal() {
 
   const handleLaunch = async (p: ProjectWithTags) => {
     window.open(p.url, "_blank", "noopener,noreferrer");
-    if (!supabase) return;
     try {
       await touchLastAccessed(supabase, p.id);
       setProjects((prev) =>
@@ -190,7 +186,6 @@ export function Portal() {
   };
 
   const handleFormSubmit = async (input: ProjectInput) => {
-    if (!supabase) throw new Error("Supabase not configured");
     if (editTarget) {
       await updateProject(supabase, editTarget.id, input);
     } else {
@@ -201,14 +196,13 @@ export function Portal() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget || !supabase) return;
+    if (!deleteTarget) return;
     await deleteProject(supabase, deleteTarget.id);
     await refetch();
     setSelected(null);
   };
 
   const handleTogglePin = async (p: ProjectWithTags) => {
-    if (!supabase) return;
     const next = !p.pinned;
     setProjects((prev) => prev.map((x) => (x.id === p.id ? { ...x, pinned: next } : x)));
     if (selected?.id === p.id) setSelected({ ...p, pinned: next });
@@ -233,6 +227,7 @@ export function Portal() {
           sortBy={sortBy}
           onSortChange={setSortBy}
           searchInputRef={searchInputRef}
+          isLocal={supabase === null}
         />
         <div className="flex-1 flex min-h-0">
           <CategoryRail
