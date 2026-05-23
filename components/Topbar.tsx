@@ -42,10 +42,14 @@ export function Topbar({
   isLocal,
 }: Props) {
   return (
-    <div className="flex items-center bg-white border-b border-slate-200 h-14 px-4 gap-3 shrink-0">
-      <div className="flex items-center gap-2 shrink-0">
+    <div className="flex items-center bg-white/80 backdrop-blur-xl border-b border-slate-200/70 h-16 px-5 gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <span
-          className={`w-2.5 h-2.5 rounded-full ${isLocal ? "bg-amber-500" : "bg-emerald-500"}`}
+          className={`w-2.5 h-2.5 rounded-full animate-pulse-soft ${
+            isLocal
+              ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)]"
+              : "bg-emerald-500 shadow-glow-emerald"
+          }`}
         />
         <Database className="w-4 h-4 text-slate-600" />
         <div className="flex flex-col leading-tight">
@@ -54,7 +58,7 @@ export function Topbar({
         </div>
         {isLocal && (
           <span
-            className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 bg-amber-100 text-amber-800 rounded uppercase tracking-wide"
+            className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full uppercase tracking-wide"
             title="ข้อมูลเก็บเฉพาะ browser นี้ — ตั้ง Supabase env vars เพื่อ sync cloud / Data stored in this browser only — set Supabase env vars to sync"
           >
             Local mode
@@ -76,8 +80,6 @@ export function Topbar({
         onSelect={(k) => onSortChange(k as SortKey)}
       />
 
-      <FilterChip label="View" valueTh="ตาราง" valueEn="Table" />
-
       <div className="flex-1" />
 
       <div className="text-xs text-slate-500 tabular-nums hidden md:block">
@@ -86,16 +88,19 @@ export function Topbar({
       </div>
 
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         <input
           ref={searchInputRef}
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="ค้นหา / Search (press /)..."
-          className="w-64 pl-9 pr-3 h-9 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-slate-400"
+          placeholder="ค้นหา / Search..."
+          className="w-72 pl-9 pr-10 h-9 text-sm bg-slate-50/80 border border-slate-200/70 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500 focus:bg-white placeholder:text-slate-400 transition-all duration-200 ease-liquid"
           aria-label="ค้นหาโครงการ / Search projects"
         />
+        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-500 border border-slate-200 font-mono pointer-events-none">
+          /
+        </kbd>
       </div>
 
       <div className="hidden lg:flex items-center gap-1 text-slate-400">
@@ -107,7 +112,7 @@ export function Topbar({
 
       <button
         onClick={onAddNew}
-        className="flex items-center gap-1.5 h-9 pl-2.5 pr-3 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-md transition-colors shrink-0"
+        className="flex items-center gap-1.5 h-9 pl-3 pr-4 bg-gradient-to-b from-cyan-500 to-cyan-600 hover:from-cyan-500 hover:to-cyan-700 text-white text-sm font-medium rounded-full shadow-glow-cyan transition-all duration-200 ease-liquid hover:scale-[1.02] active:scale-100 shrink-0"
       >
         <Plus className="w-4 h-4" />
         <span className="flex flex-col leading-tight items-start">
@@ -179,24 +184,10 @@ function Dropdown({
   );
 }
 
-function FilterChip({ label, valueTh, valueEn }: { label: string; valueTh: string; valueEn: string }) {
-  return (
-    <div className="flex flex-col items-start gap-0.5 py-1 px-2 shrink-0">
-      <div className="flex items-center gap-1 text-[10px] text-slate-500 uppercase tracking-wide font-medium">
-        {label}
-      </div>
-      <div className="flex flex-col items-start leading-tight">
-        <span className="text-xs font-semibold text-slate-900">{valueTh}</span>
-        <span className="text-[10px] text-slate-500">{valueEn}</span>
-      </div>
-    </div>
-  );
-}
-
 function IconButton({ icon: Icon, title }: { icon: typeof Search; title: string }) {
   return (
     <button
-      className="w-8 h-8 rounded flex items-center justify-center hover:bg-slate-100 hover:text-slate-700 transition-colors"
+      className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 hover:text-slate-700 transition-colors duration-200 ease-liquid"
       title={title}
       aria-label={title}
     >

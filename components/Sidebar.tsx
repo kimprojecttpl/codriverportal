@@ -39,15 +39,25 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-16 bg-slate-900 flex flex-col items-center py-3 gap-1 shrink-0">
+    <aside className="w-16 bg-slate-900 flex flex-col items-center py-3 gap-1 shrink-0 relative">
+      {/* Subtle vertical glow on right edge — liquid depth */}
+      <span
+        aria-hidden
+        className="absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent pointer-events-none"
+      />
+
       <Link
         href="/"
-        className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-white font-bold text-sm mb-1 shadow-lg shadow-cyan-500/30"
+        className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white font-bold text-sm mb-1 ring-1 ring-cyan-300/30 shadow-glow-cyan hover:scale-105 transition-transform duration-200 ease-liquid"
         title="Codriver Portal"
       >
         C
       </Link>
-      <div className="w-2 h-2 rounded-full bg-emerald-400 mb-3" title="Online" />
+      <div
+        className="w-2 h-2 rounded-full bg-emerald-400 mb-3 animate-pulse-soft shadow-glow-emerald"
+        title="Online"
+        aria-label="ออนไลน์ / Online"
+      />
 
       {navItems.map((item) => {
         const Icon = item.icon;
@@ -56,17 +66,20 @@ export function Sidebar() {
           <Link
             key={item.id}
             href={item.href}
-            className={`group relative w-12 h-12 rounded-md flex items-center justify-center transition-colors ${
+            className={`group relative w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ease-liquid ${
               isActive
-                ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                ? "bg-cyan-500/15 text-cyan-300 shadow-glow-cyan"
+                : "text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-105"
             }`}
             title={`${item.label_th} / ${item.label_en}`}
             aria-label={`${item.label_th} / ${item.label_en}`}
           >
             <Icon className="w-5 h-5" />
             {isActive && (
-              <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-cyan-400 rounded-r" />
+              <span
+                aria-hidden
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-r-full shadow-[0_0_12px_rgba(34,211,238,0.8)]"
+              />
             )}
           </Link>
         );
@@ -75,7 +88,7 @@ export function Sidebar() {
       <div className="flex-1" />
 
       <button
-        className="w-12 h-12 rounded-md flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white"
+        className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white hover:scale-105 transition-all duration-200 ease-liquid"
         title="ข้อมูล / Info"
         aria-label="Info"
       >
@@ -85,7 +98,7 @@ export function Sidebar() {
       {isLocal ? (
         <button
           onClick={() => setConfirmClear(true)}
-          className="w-12 h-12 rounded-md flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400"
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400 hover:scale-105 transition-all duration-200 ease-liquid"
           title="ล้างข้อมูล local / Clear local data"
           aria-label="Clear local data"
         >
@@ -95,7 +108,7 @@ export function Sidebar() {
         <button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="w-12 h-12 rounded-md flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400 disabled:opacity-50"
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:bg-rose-500/15 hover:text-rose-400 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200 ease-liquid"
           title="ออกจากระบบ / Logout"
           aria-label="Logout"
         >

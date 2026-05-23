@@ -61,10 +61,10 @@ export function CategoryRail({ categories, projects, selected, onSelect, onReset
   const pinnedCount = projects.filter((p) => p.pinned).length;
 
   return (
-    <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0 hidden md:flex">
-      <div className="flex gap-2 p-3 border-b border-slate-200">
+    <aside className="w-56 bg-white/70 backdrop-blur-xl border-r border-slate-200/70 flex flex-col shrink-0 hidden md:flex">
+      <div className="flex gap-2 p-3 border-b border-slate-200/70">
         <button
-          className="flex-1 h-9 text-xs font-semibold bg-cyan-100 hover:bg-cyan-200 text-cyan-700 rounded transition-colors"
+          className="flex-1 h-9 text-xs font-semibold bg-cyan-100 hover:bg-cyan-200 text-cyan-700 rounded-xl transition-all duration-200 ease-liquid hover:shadow-glow-cyan"
           aria-label="โฟกัส / Focus"
         >
           <span className="block leading-tight">โฟกัส</span>
@@ -72,7 +72,7 @@ export function CategoryRail({ categories, projects, selected, onSelect, onReset
         </button>
         <button
           onClick={onReset}
-          className="flex-1 h-9 text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-700 rounded transition-colors"
+          className="flex-1 h-9 text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-xl transition-all duration-200 ease-liquid"
           aria-label="รีเซ็ต / Reset"
         >
           <span className="block leading-tight">รีเซ็ต</span>
@@ -196,20 +196,22 @@ function RailItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 ${indent ? "pl-8 pr-3" : "px-3"} py-1.5 text-left transition-colors ${
+      className={`group w-full flex items-center gap-2 ${indent ? "pl-7 pr-2 mx-2" : "px-2 mx-2"} py-1.5 my-0.5 text-left rounded-lg transition-all duration-200 ease-liquid ${
         active
-          ? "bg-cyan-50 text-cyan-700 border-r-2 border-cyan-500"
-          : "text-slate-700 hover:bg-slate-50 border-r-2 border-transparent"
+          ? "bg-gradient-to-r from-cyan-50 to-cyan-100/40 text-cyan-700 shadow-glass"
+          : "text-slate-700 hover:bg-slate-50 hover:translate-x-0.5"
       }`}
     >
-      <Icon className={`${indent ? "w-3.5 h-3.5" : "w-4 h-4"} shrink-0 ${active ? "text-cyan-600" : iconColor}`} />
+      <Icon className={`${indent ? "w-3.5 h-3.5" : "w-4 h-4"} shrink-0 transition-colors ${active ? "text-cyan-600" : iconColor}`} />
       <div className="flex-1 min-w-0">
         <div className={`${indent ? "text-xs" : "text-sm"} font-medium leading-tight truncate`}>{title_th}</div>
         <div className="text-[10px] text-slate-500 leading-tight truncate">{title_en}</div>
       </div>
       <span
-        className={`text-xs font-semibold tabular-nums ${
-          active ? "text-cyan-700" : "text-slate-400"
+        className={`text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full transition-colors ${
+          active
+            ? "bg-cyan-200/60 text-cyan-700"
+            : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
         }`}
       >
         {count}
