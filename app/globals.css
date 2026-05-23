@@ -28,4 +28,35 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: rgb(148 163 184);
   }
+
+  /* Liquid gradient meshes — subtle background depth */
+  .bg-mesh-cyan {
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgb(207 250 254 / 0.55), transparent 60%),
+      radial-gradient(ellipse 50% 50% at 85% 30%, rgb(224 242 254 / 0.50), transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 90%, rgb(241 245 249 / 0.80), transparent 60%),
+      linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  }
+
+  .bg-mesh-login {
+    background:
+      radial-gradient(ellipse 70% 60% at 20% 15%, rgb(165 243 252 / 0.45), transparent 60%),
+      radial-gradient(ellipse 60% 55% at 80% 80%, rgb(186 230 253 / 0.40), transparent 60%),
+      radial-gradient(ellipse 50% 50% at 60% 50%, rgb(241 245 249 / 0.6), transparent 70%),
+      linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%);
+  }
+
+  /* Glass surface — translucent + blur (use with backdrop-blur-xl) */
+  .surface-glass {
+    background: rgba(255, 255, 255, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.50);
+  }
+
+  /* Reduced motion respect */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-pulse-soft {
+      animation: none !important;
+    }
+  }
 }

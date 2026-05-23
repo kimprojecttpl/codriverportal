@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Sidebar } from "./Sidebar";
 import { Topbar, type SortKey } from "./Topbar";
+import { Hero } from "./Hero";
 import { CategoryRail } from "./CategoryRail";
 import { ProjectsTable } from "./ProjectsTable";
 import { DetailPanel } from "./DetailPanel";
@@ -228,6 +229,12 @@ export function Portal() {
           onSortChange={setSortBy}
           searchInputRef={searchInputRef}
           isLocal={supabase === null}
+        />
+        <Hero
+          projects={projects}
+          onAddNew={handleAddNew}
+          onSearchFocus={() => searchInputRef.current?.focus()}
+          onLaunch={handleLaunch}
         />
         <div className="flex-1 flex min-h-0">
           <CategoryRail
