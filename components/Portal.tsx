@@ -89,6 +89,32 @@ export function Portal() {
     refetch();
   }, [refetch]);
 
+  // Realtime subscription — keeps multiple tabs/devices in sync
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase
+      .channel("portal-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "projects" },
+        () => refetch()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "categories" },
+        () => refetch()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "project_tags" },
+        () => refetch()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, refetch]);
+
   const filtered = useMemo(() => {
     const STATUS_FILTERS = ["active", "paused", "done"];
     const result = projects.filter((p) => {

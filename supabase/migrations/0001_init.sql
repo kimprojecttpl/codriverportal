@@ -133,3 +133,12 @@ create policy "project_tags_owner_all" on public.project_tags
   with check (
     exists (select 1 from public.projects where id = project_id and owner_id = auth.uid())
   );
+
+-- ─────────────────────────────────────────────
+-- REALTIME (multi-tab sync)
+-- ─────────────────────────────────────────────
+
+alter publication supabase_realtime add table public.projects;
+alter publication supabase_realtime add table public.categories;
+alter publication supabase_realtime add table public.tags;
+alter publication supabase_realtime add table public.project_tags;
