@@ -21,6 +21,7 @@ type Props = {
   resultCount: number;
   sortBy: SortKey;
   onSortChange: (s: SortKey) => void;
+  searchInputRef?: React.RefObject<HTMLInputElement>;
 };
 
 const sortLabels: Record<SortKey, { th: string; en: string }> = {
@@ -36,6 +37,7 @@ export function Topbar({
   resultCount,
   sortBy,
   onSortChange,
+  searchInputRef,
 }: Props) {
   return (
     <div className="flex items-center bg-white border-b border-slate-200 h-14 px-4 gap-3 shrink-0">
@@ -74,11 +76,12 @@ export function Topbar({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
+          ref={searchInputRef}
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="ค้นหา / Search..."
-          className="w-56 pl-9 pr-3 h-9 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-slate-400"
+          placeholder="ค้นหา / Search (press /)..."
+          className="w-64 pl-9 pr-3 h-9 text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 placeholder:text-slate-400"
           aria-label="ค้นหาโครงการ / Search projects"
         />
       </div>

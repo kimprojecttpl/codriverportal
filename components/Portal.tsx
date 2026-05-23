@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Sidebar } from "./Sidebar";
 import { Topbar, type SortKey } from "./Topbar";
@@ -10,6 +10,7 @@ import { DetailPanel } from "./DetailPanel";
 import { ProjectFormModal } from "./ProjectFormModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { LoadingState, ErrorState } from "./LoadingState";
+import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import type { Category, ProjectInput, ProjectWithTags, Tag } from "@/lib/types";
 import {
   createProject,
@@ -44,6 +45,19 @@ export function Portal() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProjectWithTags | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProjectWithTags | null>(null);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useKeyboardShortcuts({
+    onSearch: () => searchInputRef.current?.focus(),
+    onNew: () => {
+      setEditTarget(null);
+      setFormOpen(true);
+    },
+    onEscape: () => {
+      if (selected) setSelected(null);
+    },
+  });
 
   const refetch = useCallback(async () => {
     if (!supabase) {
@@ -176,6 +190,7 @@ export function Portal() {
           resultCount={filtered.length}
           sortBy={sortBy}
           onSortChange={setSortBy}
+          searchInputRef={searchInputRef}
         />
         <div className="flex-1 flex min-h-0">
           <CategoryRail
