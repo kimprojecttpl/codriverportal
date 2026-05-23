@@ -2,7 +2,7 @@
 
 import type { Category, ProjectWithTags } from "@/lib/types";
 import { StatusBadge } from "./StatusBadge";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, Plus, Pin } from "lucide-react";
 
 type Props = {
   projects: ProjectWithTags[];
@@ -99,8 +99,11 @@ export function ProjectsTable({
                 className="border-b border-slate-100 hover:bg-cyan-50/40 cursor-pointer group transition-colors"
               >
                 <td className="px-4 py-3 text-slate-400 tabular-nums text-xs">{i + 1}</td>
-                <td className="px-2 py-3 text-2xl text-center select-none" aria-hidden>
+                <td className="px-2 py-3 text-2xl text-center select-none relative" aria-hidden>
                   {p.icon ?? "📁"}
+                  {p.pinned && (
+                    <Pin className="absolute top-2 right-0 w-3 h-3 text-amber-500 fill-amber-500" />
+                  )}
                 </td>
                 <td className="px-2 py-3">
                   <div className="font-medium text-slate-900 leading-tight">{p.name_th}</div>

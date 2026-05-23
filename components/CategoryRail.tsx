@@ -36,6 +36,7 @@ export function CategoryRail({ categories, projects, selected, onSelect, onReset
   const activeCount = projects.filter((p) => p.status === "active").length;
   const pausedCount = projects.filter((p) => p.status === "paused").length;
   const doneCount = projects.filter((p) => p.status === "done").length;
+  const pinnedCount = projects.filter((p) => p.pinned).length;
 
   return (
     <aside className="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0 hidden md:flex">
@@ -97,7 +98,7 @@ export function CategoryRail({ categories, projects, selected, onSelect, onReset
           icon={Star}
           active={selected === "pinned"}
           onClick={() => onSelect("pinned")}
-          count={0}
+          count={pinnedCount}
           title_th="ปักหมุด"
           title_en="Pinned"
         />

@@ -2,7 +2,7 @@
 
 import type { Category, ProjectWithTags } from "@/lib/types";
 import { StatusBadge } from "./StatusBadge";
-import { X, ExternalLink, Edit2, Trash2 } from "lucide-react";
+import { X, ExternalLink, Edit2, Trash2, Pin, PinOff } from "lucide-react";
 
 type Props = {
   project: ProjectWithTags | null;
@@ -11,9 +11,18 @@ type Props = {
   onLaunch: (p: ProjectWithTags) => void;
   onEdit: (p: ProjectWithTags) => void;
   onDelete: (p: ProjectWithTags) => void;
+  onTogglePin: (p: ProjectWithTags) => void;
 };
 
-export function DetailPanel({ project, categories, onClose, onLaunch, onEdit, onDelete }: Props) {
+export function DetailPanel({
+  project,
+  categories,
+  onClose,
+  onLaunch,
+  onEdit,
+  onDelete,
+  onTogglePin,
+}: Props) {
   if (!project) return null;
   const cat = categories.find((c) => c.id === project.category_id);
 
@@ -27,8 +36,11 @@ export function DetailPanel({ project, categories, onClose, onLaunch, onEdit, on
       <aside className="fixed lg:relative right-0 top-0 bottom-0 w-full max-w-md bg-white border-l border-slate-200 shadow-2xl lg:shadow-none flex flex-col z-50 lg:z-0">
         <div className="flex items-start justify-between p-5 border-b border-slate-200">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="text-3xl shrink-0" aria-hidden>
+            <div className="text-3xl shrink-0 relative" aria-hidden>
               {project.icon ?? "📁"}
+              {project.pinned && (
+                <Pin className="absolute -top-1 -right-1 w-3 h-3 text-amber-500 fill-amber-500" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="text-base font-semibold text-slate-900 leading-tight truncate">
@@ -57,6 +69,18 @@ export function DetailPanel({ project, categories, onClose, onLaunch, onEdit, on
             >
               <ExternalLink className="w-4 h-4" />
               <span>เปิด / Open</span>
+            </button>
+            <button
+              onClick={() => onTogglePin(project)}
+              className={`w-9 h-9 flex items-center justify-center border rounded-md transition-colors ${
+                project.pinned
+                  ? "border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100"
+                  : "border-slate-200 hover:bg-slate-50 text-slate-600"
+              }`}
+              title={project.pinned ? "ยกเลิกปักหมุด / Unpin" : "ปักหมุด / Pin"}
+              aria-label={project.pinned ? "Unpin" : "Pin"}
+            >
+              {project.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
             </button>
             <button
               onClick={() => onEdit(project)}

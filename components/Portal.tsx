@@ -17,6 +17,7 @@ import {
   fetchCategories,
   fetchProjects,
   fetchTags,
+  togglePinned,
   touchLastAccessed,
   updateProject,
 } from "@/lib/db";
@@ -150,6 +151,20 @@ export function Portal() {
     setSelected(null);
   };
 
+  const handleTogglePin = async (p: ProjectWithTags) => {
+    if (!supabase) return;
+    const next = !p.pinned;
+    setProjects((prev) => prev.map((x) => (x.id === p.id ? { ...x, pinned: next } : x)));
+    if (selected?.id === p.id) setSelected({ ...p, pinned: next });
+    try {
+      await togglePinned(supabase, p.id, next);
+    } catch (e) {
+      setProjects((prev) => prev.map((x) => (x.id === p.id ? { ...x, pinned: !next } : x)));
+      if (selected?.id === p.id) setSelected({ ...p, pinned: !next });
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   return (
     <div className="h-screen flex bg-slate-50 overflow-hidden">
       <Sidebar />
@@ -194,6 +209,7 @@ export function Portal() {
             onLaunch={handleLaunch}
             onEdit={handleEdit}
             onDelete={(p) => setDeleteTarget(p)}
+            onTogglePin={handleTogglePin}
           />
         </div>
       </div>
